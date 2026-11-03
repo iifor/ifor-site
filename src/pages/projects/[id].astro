@@ -53,9 +53,14 @@ const html = await marked.parse(project.body);
       }
     </header>
 
-    <div class="mt-10 overflow-hidden rounded-2xl border border-line">
-      <ProjectCover project={project} class="h-[clamp(240px,48vw,440px)]" priority />
-    </div>
+    {
+      // 只有真正上传了封面图才显示；没有图时的插画只是首页卡片的占位，详情页不放
+      project.coverId && (
+        <div class="mt-10 overflow-hidden rounded-2xl border border-line">
+          <ProjectCover project={project} class="h-[clamp(240px,48vw,440px)]" priority />
+        </div>
+      )
+    }
   </article>
 
   {

@@ -1,6 +1,12 @@
 import { query } from './db';
 import { parseDiagrams, type ArchitectureSpec } from './architecture';
 
+/** 没有封面图时显示的插画 */
+export const PROJECT_ARTS = { seats: '座位插画', loop: '网络插画' } as const;
+export type ProjectArt = keyof typeof PROJECT_ARTS;
+export const isProjectArt = (value: unknown): value is ProjectArt =>
+  typeof value === 'string' && Object.hasOwn(PROJECT_ARTS, value);
+
 export type Project = {
   id: string;
   title: string;
@@ -12,7 +18,7 @@ export type Project = {
   coverId: number | null;
   coverAlt: string | null;
   coverPosition: string;
-  art: 'seats' | null;
+  art: ProjectArt | null;
   demo: string | null;
   source: string | null;
   body: string;
@@ -51,7 +57,7 @@ const fromRow = (row: Row): Project => ({
   coverId: row.cover_id,
   coverAlt: row.cover_alt,
   coverPosition: row.cover_position,
-  art: row.art === 'seats' ? 'seats' : null,
+  art: isProjectArt(row.art) ? row.art : null,
   demo: row.demo,
   source: row.source,
   body: row.body,

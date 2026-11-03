@@ -2,6 +2,7 @@
 import type { Project } from '../lib/projects';
 import { mediaUrl } from '../lib/media';
 import SeatsArt from './SeatsArt.astro';
+import NeuralLoop from './NeuralLoop.astro';
 
 interface Props {
   project: Project;
@@ -29,6 +30,8 @@ const { coverId, coverAlt, coverPosition, art, title } = project;
     <div class:list={['flex w-full items-center justify-center bg-surface-2', className]}>
       {art === 'seats' ? (
         <SeatsArt class="h-[92%] max-h-[260px] w-auto" />
+      ) : art === 'loop' ? (
+        <NeuralLoop class="h-[94%] w-auto" />
       ) : (
         <span class="font-mono text-2xl font-bold text-dim">{title.slice(0, 1).toUpperCase()}</span>
       )}

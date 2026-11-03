@@ -1,4 +1,4 @@
-import type { Project, ProjectInput } from './projects';
+import { isProjectArt, type Project, type ProjectInput } from './projects';
 import { parseDiagrams } from './architecture';
 
 // 后台表单的原始值（全是字符串），出错时原样回填
@@ -125,7 +125,7 @@ export function readProjectForm(form: FormData) {
     coverId: values.coverId ? Number(values.coverId) : null,
     coverAlt: values.coverAlt || null,
     coverPosition: values.coverPosition,
-    art: values.art === 'seats' ? 'seats' : null,
+    art: isProjectArt(values.art) ? values.art : null,
     demo: values.demo || null,
     source: values.source || null,
     body: values.body,

@@ -6,27 +6,40 @@ stack: [TypeScript, React, Express, PostgreSQL]
 order: 1
 art: seats
 architecture:
-  - title: 硅基桌游的运行架构
+  - title: 硅基桌游的系统架构
     nodes:
-      - { id: stage, label: 对局舞台, kind: client, x: 0, y: 0, note: C 端：大厅、对局舞台、历史与回放，用通用舞台实时播放对局。 }
-      - { id: admin, label: 管理后台, kind: client, x: 0, y: 1, note: B 端：配置模型和玩家，查看对局列表、Trace 和调试台。 }
-      - { id: server, label: 服务端, kind: service, x: 1, y: 0.5, note: Express + WebSocket 适配层：配置、鉴权、对局运行时、AI 调用和实时网关。 }
-      - { id: engine, label: 引擎, kind: module, x: 2, y: 0, primary: true, note: 纯运行时：解释 GameSpec 阶段图，推进流程、调度 AI、校验合法性、隔离信息、重试兜底。不碰网络、时间和随机数。 }
-      - { id: games, label: 游戏定义, kind: module, x: 3, y: 0, note: 每个游戏一个目录：声明式阶段图 + 规则纯函数 + 提示词模板。首版是辩论赛和狼人杀 12 人局。 }
-      - { id: llm, label: 大模型, kind: ai, x: 2, y: 1, note: 每个座位是一名 AI 玩家，由服务端调用模型生成发言和行动。 }
-      - { id: db, label: PostgreSQL, kind: store, x: 2, y: 2, note: 存对局记录，用来做历史和回放。 }
+      - { id: client, label: 对局舞台, kind: client, x: 0, y: 0, note: C 端（React 19 + Vite）：大厅、对局舞台、历史与回放；和后台共用 shared 包里的协议类型。 }
+      - { id: admin, label: 管理后台, kind: client, x: 0, y: 2, note: B 端（React + antd）：配置供应商、模型、玩家和音色，开对局、看 Trace、用调试台。 }
+      - { id: gateway, label: 实时网关, kind: service, x: 1, y: 0, note: WebSocket：客户端先 hello，再逐个 ack；按顺序推送舞台事件，实时和回放走同一条路。 }
+      - { id: tts, label: 语音合成, kind: external, x: 1, y: 1, note: 按座位音色合成发言语音（Azure、Mimo），按音色和文本缓存；失败就退回字幕或浏览器朗读。 }
+      - { id: api, label: REST API, kind: service, x: 1, y: 2, note: Express：管理员登录，供应商、模型、玩家、音色的增删改，创建和调试对局，游戏目录。 }
+      - { id: bus, label: 事件总线, kind: module, x: 2, y: 0, note: 进程内事件：对局有新事件、AI 任务入队、观众确认进度、状态变化。 }
+      - { id: runtime, label: 对局运行时, kind: service, x: 2, y: 1, primary: true, note: 在一个事务里锁定对局 → 调用引擎 advance → 写回快照、AI 任务和舞台事件，提交后通知事件总线。 }
+      - { id: db, label: PostgreSQL, kind: store, x: 2, y: 2, note: 对局快照、AI 任务、舞台事件，以及供应商、模型、玩家、音色等配置。 }
+      - { id: worker, label: AI Worker, kind: service, x: 3, y: 0, note: 事件驱动 + 定时兜底轮询：领取 AI 任务，主模型失败切备用模型，结果交回运行时。 }
+      - { id: llm, label: 模型供应商, kind: ai, x: 4, y: 0, note: OpenAI 兼容的 Chat Completions 接口，要求返回 JSON；每个座位可以接不同的模型。 }
+      - { id: engine, label: 引擎, kind: module, x: 3, y: 1, note: 纯运行时：解释阶段图、调度 AI、校验合法性、隔离信息、重试兜底；不碰网络、时间和随机数。 }
+      - { id: games, label: 游戏定义, kind: module, x: 4, y: 1, note: 辩论赛、狼人杀……每个游戏 = 阶段图 + 规则纯函数 + 提示词模板，通过注册表提供给前后端。 }
     edges:
-      - { from: stage, to: server, label: WebSocket }
-      - { from: admin, to: server, label: HTTP }
-      - { from: server, to: engine, label: 运行对局 }
-      - { from: engine, to: games, label: 加载 GameSpec }
-      - { from: server, to: llm, label: AI 调用, async: true }
-      - { from: server, to: db, label: 对局与回放 }
+      - { from: client, to: gateway, label: WebSocket }
+      - { from: admin, to: api, label: HTTP }
+      - { from: api, to: runtime, label: 开局与调试 }
+      - { from: api, to: db, label: 读写配置 }
+      - { from: runtime, to: engine, label: advance }
+      - { from: engine, to: games, label: GameSpec }
+      - { from: runtime, to: db, label: 事务写回 }
+      - { from: runtime, to: bus, label: 提交后通知 }
+      - { from: bus, to: worker, label: AI 任务 }
+      - { from: worker, to: llm, label: 调用, async: true }
+      - { from: worker, to: runtime, label: AI 结果 }
+      - { from: bus, to: gateway, label: 新事件 }
+      - { from: gateway, to: tts, label: 合成语音 }
     steps:
-      - { caption: 观众在舞台上看对局，管理员在后台配置模型和玩家, nodes: [stage, admin] }
-      - { caption: 服务端接住请求，负责鉴权、对局运行时和实时推送, nodes: [server] }
-      - { caption: 纯运行时引擎解释游戏的阶段图，规则和提示词来自游戏定义, nodes: [engine, games] }
-      - { caption: 服务端调用大模型扮演每个玩家，对局写进 PostgreSQL 以便回放, nodes: [llm, db] }
+      - { caption: 观众在舞台上看对局，管理员在后台配置模型、玩家和音色, nodes: [client, admin] }
+      - { caption: 实时网关推送舞台事件并配上语音，REST API 处理后台操作, nodes: [gateway, tts, api] }
+      - { caption: 对局运行时在一个事务里推进对局，并写回 PostgreSQL, nodes: [runtime, db] }
+      - { caption: 引擎解释游戏的阶段图，规则和提示词来自游戏定义, nodes: [engine, games] }
+      - { caption: 事件总线通知 AI Worker 领取任务、调用模型，结果再交回运行时, nodes: [bus, worker, llm] }
 
   - title: 一局辩论赛是怎么跑起来的
     nodes:

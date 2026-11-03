@@ -2,6 +2,7 @@
 import type { ProjectFormValues } from '../../lib/project-form';
 import { mediaUrl } from '../../lib/media';
 import { ARCHITECTURE_EXAMPLE, NODE_KINDS } from '../../lib/architecture';
+import { PROJECT_ARTS } from '../../lib/projects';
 
 interface Props {
   values: ProjectFormValues;
@@ -140,7 +141,11 @@ const cardTitle = 'mb-5 font-bold';
               没有图片时显示
               <select name="art" class={input}>
                 <option value="" selected={values.art === ''}>标题首字母</option>
-                <option value="seats" selected={values.art === 'seats'}>座位插画</option>
+                {Object.entries(PROJECT_ARTS).map(([value, label]) => (
+                  <option value={value} selected={values.art === value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
           )
