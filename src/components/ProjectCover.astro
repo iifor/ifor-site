@@ -1,6 +1,6 @@
 ---
 import type { Project } from '../lib/projects';
-import { mediaUrl } from '../lib/media';
+import { mediaSrcset, mediaUrl } from '../lib/media';
 import SeatsArt from './SeatsArt.astro';
 import NeuralLoop from './NeuralLoop.astro';
 
@@ -9,16 +9,20 @@ interface Props {
   class?: string;
   /** 首屏可见的封面：立即加载并提高优先级 */
   priority?: boolean;
+  /** 图片在页面上的显示宽度，浏览器据此从 srcset 里挑合适的尺寸 */
+  sizes: string;
 }
 
-const { project, class: className, priority = false } = Astro.props;
+const { project, class: className, priority = false, sizes } = Astro.props;
 const { coverId, coverAlt, coverPosition, art, title } = project;
 ---
 
 {
   coverId ? (
     <img
-      src={mediaUrl(coverId)}
+      src={mediaUrl(coverId, 960)}
+      srcset={mediaSrcset(coverId)}
+      sizes={sizes}
       alt={coverAlt ?? title}
       loading={priority ? 'eager' : 'lazy'}
       fetchpriority={priority ? 'high' : 'auto'}
@@ -27,7 +31,7 @@ const { coverId, coverAlt, coverPosition, art, title } = project;
       style={`object-position: ${coverPosition}`}
     />
   ) : (
-    <div class:list={['flex w-full items-center justify-center bg-surface-2', className]}>
+    <div data-pause-offscreen class:list={['flex w-full items-center justify-center bg-surface-2', className]}>
       {art === 'seats' ? (
         <SeatsArt class="h-[92%] max-h-[260px] w-auto" />
       ) : art === 'loop' ? (

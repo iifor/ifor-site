@@ -13,12 +13,14 @@
     "check": "astro check",
     "db:up": "docker compose -f docker-compose.dev.yml up -d",
     "db:down": "docker compose -f docker-compose.dev.yml down",
-    "db:seed": "node --env-file=.env scripts/seed.ts"
+    "db:seed": "node --env-file=.env scripts/seed.ts",
+    "start": "node server.mjs"
   },
   "dependencies": {
     "@astrojs/node": "11.1.9",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "7.4.1",
+    "compression": "1.8.2",
     "marked": "18.1.2",
     "pg": "8.23.1",
     "sharp": "0.35.5",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@types/compression": "^1.8.1",
     "@types/pg": "^8.23.1",
     "typescript": "^6.0.3",
     "yaml": "2.9.1"

@@ -23,6 +23,7 @@ npm run dev             # http://localhost:4321
 ```bash
 npm run check    # 类型检查
 npm run build    # 构建到 dist/
+npm start        # 用构建结果启动生产服务（带 gzip / brotli 压缩，入口是 server.mjs）
 npm run db:down  # 停掉本地数据库
 ```
 

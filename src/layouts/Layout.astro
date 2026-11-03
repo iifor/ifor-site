@@ -37,5 +37,21 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
       <Footer />
     </div>
     <ContactDialog />
+
+    <script>
+      // 一直在动的插画和图解，滚出屏幕就暂停，省 CPU 和电量。
+      // CSS 动画靠 data-paused，SVG 里的 animateMotion 要单独调 pauseAnimations。
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement;
+          el.toggleAttribute('data-paused', !entry.isIntersecting);
+          for (const svg of el.querySelectorAll('svg')) {
+            if (entry.isIntersecting) svg.unpauseAnimations();
+            else svg.pauseAnimations();
+          }
+        }
+      });
+      for (const el of document.querySelectorAll('[data-pause-offscreen]')) observer.observe(el);
+    </script>
   </body>
 </html>

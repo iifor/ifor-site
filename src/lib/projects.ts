@@ -83,11 +83,21 @@ const values = (p: ProjectInput) => [
   p.architecture.length ? JSON.stringify(p.architecture) : null,
 ];
 
+// 首页和详情页每次都要项目列表；缓存在内存里，后台改动时清掉。
+// 再加 60 秒过期，兜住导入脚本这类绕过网站直接改库的情况。
+const LIST_TTL_MS = 60_000;
+let listCache: { at: number; rows: Project[] } | undefined;
+
+function invalidate() {
+  listCache = undefined;
+}
+
 export async function listProjects({ includeDrafts = false } = {}) {
-  const { rows } = await query<Row>(
-    `SELECT * FROM projects ${includeDrafts ? '' : 'WHERE published'} ORDER BY sort_order, created_at`,
-  );
-  return rows.map(fromRow);
+  if (!listCache || Date.now() - listCache.at > LIST_TTL_MS) {
+    const { rows } = await query<Row>('SELECT * FROM projects ORDER BY sort_order, created_at');
+    listCache = { at: Date.now(), rows: rows.map(fromRow) };
+  }
+  return includeDrafts ? listCache.rows : listCache.rows.filter((p) => p.published);
 }
 
 export async function getProject(id: string) {
@@ -103,6 +113,7 @@ export async function createProject(id: string, input: ProjectInput) {
      ON CONFLICT (id) DO NOTHING`,
     [id, ...values(input)],
   );
+  invalidate();
   return rowCount === 1;
 }
 
@@ -113,8 +124,10 @@ export async function updateProject(id: string, input: ProjectInput) {
      WHERE id = $1`,
     [id, ...values(input)],
   );
+  invalidate();
 }
 
 export async function deleteProject(id: string) {
   await query('DELETE FROM projects WHERE id = $1', [id]);
+  invalidate();
 }

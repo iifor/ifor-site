@@ -15,6 +15,7 @@ ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
+COPY server.mjs ./
 EXPOSE 4321
 USER node
-CMD ["node", "dist/server/entry.mjs"]
+CMD ["node", "server.mjs"]
