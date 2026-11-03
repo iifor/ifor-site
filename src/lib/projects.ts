@@ -1,4 +1,5 @@
 import { query } from './db';
+import { parseDiagrams, type ArchitectureSpec } from './architecture';
 
 export type Project = {
   id: string;
@@ -15,6 +16,8 @@ export type Project = {
   demo: string | null;
   source: string | null;
   body: string;
+  /** 详情页上的动态图解，可以有多张 */
+  architecture: ArchitectureSpec[];
 };
 
 export type ProjectInput = Omit<Project, 'id'>;
@@ -34,6 +37,7 @@ type Row = {
   demo: string | null;
   source: string | null;
   body: string;
+  architecture: unknown;
 };
 
 const fromRow = (row: Row): Project => ({
@@ -51,9 +55,11 @@ const fromRow = (row: Row): Project => ({
   demo: row.demo,
   source: row.source,
   body: row.body,
+  // 库里的数据也再校验一遍，坏数据就当没有图
+  architecture: row.architecture ? parseDiagrams(row.architecture).specs : [],
 });
 
-const columns = `title, summary, tags, stack, sort_order, published, cover_id, cover_alt, cover_position, art, demo, source, body`;
+const columns = `title, summary, tags, stack, sort_order, published, cover_id, cover_alt, cover_position, art, demo, source, body, architecture`;
 const values = (p: ProjectInput) => [
   p.title,
   p.summary,
@@ -68,6 +74,7 @@ const values = (p: ProjectInput) => [
   p.demo,
   p.source,
   p.body,
+  p.architecture.length ? JSON.stringify(p.architecture) : null,
 ];
 
 export async function listProjects({ includeDrafts = false } = {}) {
@@ -86,7 +93,7 @@ export async function getProject(id: string) {
 export async function createProject(id: string, input: ProjectInput) {
   const { rowCount } = await query(
     `INSERT INTO projects (id, ${columns})
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      ON CONFLICT (id) DO NOTHING`,
     [id, ...values(input)],
   );
@@ -96,7 +103,7 @@ export async function createProject(id: string, input: ProjectInput) {
 export async function updateProject(id: string, input: ProjectInput) {
   await query(
     `UPDATE projects SET (${columns}, updated_at) =
-     ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, now())
+     ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
      WHERE id = $1`,
     [id, ...values(input)],
   );

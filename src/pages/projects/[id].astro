@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import Layout from '../../layouts/Layout.astro';
 import ProjectCover from '../../components/ProjectCover.astro';
 import Tag from '../../components/Tag.astro';
+import ArchitectureDiagram from '../../components/ArchitectureDiagram.astro';
 import { listProjects } from '../../lib/projects';
 
 const projects = await listProjects();
@@ -17,7 +18,7 @@ const html = await marked.parse(project.body);
 ---
 
 <Layout title={title} description={summary}>
-  <article class="mx-auto max-w-[820px] pt-6 pb-24">
+  <article class="mx-auto max-w-[820px] pt-6 pb-14">
     <a href="/#projects" class="inline-flex min-h-11 items-center font-mono text-sm text-dim transition-colors hover:text-fg">
       ← 返回项目
     </a>
@@ -55,7 +56,21 @@ const html = await marked.parse(project.body);
     <div class="mt-10 overflow-hidden rounded-2xl border border-line">
       <ProjectCover project={project} class="h-[clamp(240px,48vw,440px)]" priority />
     </div>
+  </article>
 
+  {
+    project.architecture.map((spec, i) => (
+      <section aria-label={spec.title ?? '图解'} class="pb-14">
+        <p class="font-mono text-[13px] tracking-[0.18em] text-dim uppercase">
+          {String(i + 1).padStart(2, '0')} · Diagram
+        </p>
+        <h2 class="mt-2 mb-6 text-2xl font-bold">{spec.title ?? '它是怎么搭起来的'}</h2>
+        <ArchitectureDiagram spec={spec} />
+      </section>
+    ))
+  }
+
+  <article class="mx-auto max-w-[820px] pb-24">
     <div class="prose mt-4" set:html={html} />
 
     <nav aria-label="其他项目" class="mt-20 grid grid-cols-2 gap-4 border-t border-line-soft pt-8">

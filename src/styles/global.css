@@ -110,6 +110,53 @@ html {
   mask-image: radial-gradient(ellipse at center, #000 30%, transparent 72%);
 }
 
+.dot-grid-soft {
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 项目架构图（ArchitectureDiagram） */
+.arch {
+  & .arch-line {
+    stroke: var(--line-strong);
+    transition: stroke 0.25s, stroke-dashoffset 0.7s ease-out;
+  }
+  & .arch-line.is-async { stroke-dasharray: 0.02 0.015; }
+  & .arch-edge-label rect { fill: var(--surface); stroke: var(--line); }
+  & .arch-edge-label text { fill: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+  & .arch-token { opacity: 0; transition: opacity 0.3s; }
+
+  & .arch-node { cursor: pointer; outline: none; transition: opacity 0.25s; }
+  & .arch-node-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; transition: stroke 0.25s; }
+  & .arch-node-icon-bg { fill: var(--chip); }
+  & .arch-node-icon { stroke: var(--fg-soft); }
+  & .arch-node-label { fill: var(--fg); font-size: 15px; font-weight: 700; }
+  & .arch-node-kind { fill: var(--dim); font-size: 11px; }
+  & .arch-node.is-primary .arch-node-box { stroke: var(--accent); stroke-width: 1.5; }
+  & .arch-node.is-primary .arch-node-icon { stroke: var(--accent); }
+  & .arch-node:hover .arch-node-box,
+  & .arch-node:focus-visible .arch-node-box,
+  & .arch-node.is-focus .arch-node-box { stroke: var(--fg); stroke-width: 1.5; }
+
+  & .arch-edge { transition: opacity 0.25s; }
+  & .arch-edge.is-out .arch-line { stroke: var(--accent); stroke-width: 2; }
+  & .arch-edge.is-in .arch-line { stroke: var(--string); stroke-width: 2; }
+  & .arch-edge.is-dim,
+  & .arch-node.is-dim { opacity: 0.22; }
+}
+
+/* 有 JS 时按步骤搭建：节点浮现，连线从起点画到终点 */
+.arch[data-anim] {
+  & .arch-step { opacity: 0; transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+  & .arch-node.arch-step { transform: translateY(8px); transform-box: fill-box; }
+  & .arch-step.is-on { opacity: 1; transform: none; }
+  & .arch-step .arch-line:not(.is-async) { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  & .arch-step.is-on .arch-line:not(.is-async) { stroke-dashoffset: 0; }
+}
+
+.arch[data-flowing] .arch-token { opacity: 0.9; }
+.arch[data-flowing][data-focus] .arch-edge:not(.is-out, .is-in) .arch-token { opacity: 0; }
+
 @keyframes floop {
   0%, 20% { color: var(--loop-1); }
   25%, 45% { color: var(--loop-2); }

@@ -1,4 +1,5 @@
 import type { Project, ProjectInput } from './projects';
+import { parseDiagrams } from './architecture';
 
 // 后台表单的原始值（全是字符串），出错时原样回填
 export type ProjectFormValues = {
@@ -16,6 +17,7 @@ export type ProjectFormValues = {
   demo: string;
   source: string;
   body: string;
+  architecture: string;
 };
 
 export const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
@@ -35,6 +37,7 @@ export const emptyProjectValues = (order: number): ProjectFormValues => ({
   demo: '',
   source: '',
   body: '',
+  architecture: '',
 });
 
 export const projectToValues = (p: Project): ProjectFormValues => ({
@@ -52,6 +55,11 @@ export const projectToValues = (p: Project): ProjectFormValues => ({
   demo: p.demo ?? '',
   source: p.source ?? '',
   body: p.body,
+  // 只有一张图时写成对象，多张时写成数组
+  architecture:
+    p.architecture.length === 0
+      ? ''
+      : JSON.stringify(p.architecture.length === 1 ? p.architecture[0] : p.architecture, null, 2),
 });
 
 const str = (form: FormData, key: string) => String(form.get(key) ?? '').trim();
@@ -86,6 +94,7 @@ export function readProjectForm(form: FormData) {
     demo: str(form, 'demo'),
     source: str(form, 'source'),
     body: String(form.get('body') ?? '').replace(/\r\n/g, '\n').trim(),
+    architecture: String(form.get('architecture') ?? '').trim(),
   };
 
   const errors: string[] = [];
@@ -94,6 +103,17 @@ export function readProjectForm(form: FormData) {
   if (!/^-?\d+$/.test(values.order)) errors.push('排序要填整数');
   if (values.demo && !isHttpUrl(values.demo)) errors.push('在线试玩地址要以 http:// 或 https:// 开头');
   if (values.source && !isHttpUrl(values.source)) errors.push('源码地址要以 http:// 或 https:// 开头');
+
+  let architecture: ProjectInput['architecture'] = [];
+  if (values.architecture) {
+    try {
+      const parsed = parseDiagrams(JSON.parse(values.architecture));
+      architecture = parsed.specs;
+      errors.push(...parsed.errors.map((e) => `图解：${e}`));
+    } catch {
+      errors.push('图解不是合法的 JSON（检查逗号、引号和括号）');
+    }
+  }
 
   const input: ProjectInput = {
     title: values.title,
@@ -109,6 +129,7 @@ export function readProjectForm(form: FormData) {
     demo: values.demo || null,
     source: values.source || null,
     body: values.body,
+    architecture,
   };
 
   return { values, input, errors };

@@ -1,0 +1,323 @@
+---
+// SeeCode 风格的动态架构图：节点按步骤搭建出来，连线上有数据流动；
+// 悬停节点看上下游和说明。没有 JS 时直接显示完整的图。
+import { KIND_LABELS, type ArchitectureSpec, type NodeKind } from '../lib/architecture';
+
+interface Props {
+  spec: ArchitectureSpec;
+}
+
+const { spec } = Astro.props;
+
+const ICONS: Record<NodeKind, string> = {
+  client: 'M3 5h18v11H3z M8 20h8 M12 16v4',
+  service: 'M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01',
+  module: 'M21 8 12 3 3 8v8l9 5 9-5z M3 8l9 5 9-5 M12 13v8',
+  store: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  external: 'M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z',
+  ai: 'M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
+  file: 'M14 3H6v18h12V7z M14 3v4h4',
+  role: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0',
+  phase: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2',
+  decision: 'M12 3l9 9-9 9-9-9z',
+};
+
+// 同一页可能有几张图，箭头 marker 的 id 要分开
+const arrowId = `arch-arrow-${Math.random().toString(36).slice(2, 8)}`;
+
+// —— 布局：按网格坐标摆放，节点宽度跟着文字走 ——
+const textWidth = (s: string, cjk: number, latin: number) =>
+  [...s].reduce((w, ch) => w + (/[⺀-￿]/.test(ch) ? cjk : latin), 0);
+
+const NODE_H = 64;
+const PAD = 40;
+const nodeWidth = (label: string) => Math.max(148, 72 + textWidth(label, 15.5, 9.4));
+const maxNodeW = Math.max(...spec.nodes.map((n) => nodeWidth(n.label)));
+// 列间距要放得下连线上的标签
+const COL = Math.max(250, maxNodeW + 120);
+const ROW = 124;
+
+const nodes = spec.nodes.map((n) => {
+  const w = nodeWidth(n.label);
+  return { ...n, w, cx: PAD + maxNodeW / 2 + n.x * COL, cy: PAD + NODE_H / 2 + n.y * ROW };
+});
+const byId = new Map(nodes.map((n) => [n.id, n]));
+const width = Math.ceil(Math.max(...nodes.map((n) => n.cx + maxNodeW / 2)) + PAD);
+const height = Math.ceil(Math.max(...nodes.map((n) => n.cy + NODE_H / 2)) + PAD);
+
+// —— 搭建顺序 ——
+const steps = spec.steps?.length
+  ? [...spec.steps]
+  : [...new Set(nodes.map((n) => Math.round(n.x)))]
+      .sort((a, b) => a - b)
+      .map((col) => {
+        const inCol = nodes.filter((n) => Math.round(n.x) === col);
+        return { caption: inCol.map((n) => n.label).join('、'), nodes: inCol.map((n) => n.id) };
+      });
+const stepOf = new Map<string, number>();
+steps.forEach((s, i) => s.nodes.forEach((id) => stepOf.has(id) || stepOf.set(id, i)));
+const leftover = nodes.filter((n) => !stepOf.has(n.id));
+if (leftover.length) {
+  leftover.forEach((n) => stepOf.set(n.id, steps.length));
+  steps.push({ caption: leftover.map((n) => n.label).join('、'), nodes: leftover.map((n) => n.id) });
+}
+
+// —— 连线：横向用水平贝塞尔，同一列用竖向 ——
+const isHorizontal = (a: (typeof nodes)[number], b: (typeof nodes)[number]) => Math.abs(b.cx - a.cx) > maxNodeW * 0.6;
+
+// 同一个节点同一侧有多条线时，把接口沿边错开，按对端的位置排序，免得线和标签挤在一点
+const ports = new Map<string, string[]>();
+spec.edges.forEach((e, i) => {
+  const a = byId.get(e.from)!;
+  const b = byId.get(e.to)!;
+  if (!isHorizontal(a, b)) return;
+  const s = Math.sign(b.cx - a.cx);
+  for (const [node, side] of [
+    [a, s > 0 ? 'r' : 'l'],
+    [b, s > 0 ? 'l' : 'r'],
+  ] as const) {
+    const key = `${node.id}:${side}`;
+    ports.set(key, [...(ports.get(key) ?? []), String(i)]);
+  }
+});
+for (const [key, list] of ports) {
+  const id = key.split(':')[0];
+  list.sort((x, y) => {
+    const other = (i: string) => {
+      const e = spec.edges[Number(i)];
+      return byId.get(e.from === id ? e.to : e.from)!.cy;
+    };
+    return other(x) - other(y);
+  });
+}
+const portOffset = (nodeId: string, side: 'l' | 'r', edgeIndex: number) => {
+  const list = ports.get(`${nodeId}:${side}`) ?? [];
+  const gap = Math.min(14, (NODE_H - 20) / Math.max(1, list.length - 1));
+  return (list.indexOf(String(edgeIndex)) - (list.length - 1) / 2) * gap;
+};
+
+const edges = spec.edges.map((e, i) => {
+  const a = byId.get(e.from)!;
+  const b = byId.get(e.to)!;
+  const dx = b.cx - a.cx;
+  const dy = b.cy - a.cy;
+  let sx, sy, ex, ey, c1x, c1y, c2x, c2y;
+  if (isHorizontal(a, b)) {
+    const s = Math.sign(dx);
+    const [aSide, bSide] = s > 0 ? (['r', 'l'] as const) : (['l', 'r'] as const);
+    [sx, sy, ex, ey] = [
+      a.cx + (s * a.w) / 2,
+      a.cy + portOffset(a.id, aSide, i),
+      b.cx - (s * b.w) / 2,
+      b.cy + portOffset(b.id, bSide, i),
+    ];
+    const k = Math.max(36, Math.abs(ex - sx) / 2);
+    [c1x, c1y, c2x, c2y] = [sx + s * k, sy, ex - s * k, ey];
+  } else {
+    const s = Math.sign(dy) || 1;
+    [sx, sy, ex, ey] = [a.cx, a.cy + (s * NODE_H) / 2, b.cx, b.cy - (s * NODE_H) / 2];
+    const k = Math.max(24, Math.abs(ey - sy) / 2);
+    [c1x, c1y, c2x, c2y] = [sx, sy + s * k, ex, ey - s * k];
+  }
+  const d = `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${ey}`;
+  const mx = (sx + 3 * c1x + 3 * c2x + ex) / 8;
+  const my = (sy + 3 * c1y + 3 * c2y + ey) / 8;
+  const length = Math.hypot(ex - sx, ey - sy) * 1.15;
+  return {
+    ...e,
+    d,
+    mx,
+    my,
+    labelW: e.label ? textWidth(e.label, 12, 7.2) + 14 : 0,
+    step: Math.max(stepOf.get(e.from)!, stepOf.get(e.to)!),
+    duration: Math.max(1.2, length / 110),
+    color: `var(--loop-${(i % 4) + 1})`,
+  };
+});
+
+---
+
+<figure data-arch data-steps={steps.length} class="arch overflow-hidden rounded-2xl border border-line bg-surface">
+  <div data-arch-stage class="relative">
+    <div class="dot-grid-soft relative overflow-x-auto bg-surface-2/60 py-2">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        role="img"
+        aria-label={spec.title ?? '项目架构图'}
+        class="mx-auto block h-auto max-w-full"
+      >
+        <defs>
+          <marker id={arrowId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="context-stroke"></path>
+          </marker>
+        </defs>
+
+        {
+          edges.map((e) => (
+            <g class="arch-edge" data-from={e.from} data-to={e.to}>
+              <g class="arch-step" data-step={e.step}>
+                <path
+                  d={e.d}
+                  pathLength="1"
+                  class:list={['arch-line', e.async && 'is-async']}
+                  fill="none"
+                  stroke-width="1.5"
+                  marker-end={`url(#${arrowId})`}
+                />
+                {e.label && (
+                  <g class="arch-edge-label">
+                    <rect x={e.mx - e.labelW / 2} y={e.my - 10} width={e.labelW} height="20" rx="6" />
+                    <text x={e.mx} y={e.my + 4} text-anchor="middle">
+                      {e.label}
+                    </text>
+                  </g>
+                )}
+              </g>
+              <circle class="arch-token" r="3.5" style={`fill: ${e.color}`}>
+                <animateMotion dur={`${e.duration.toFixed(2)}s`} repeatCount="indefinite" path={e.d} />
+              </circle>
+            </g>
+          ))
+        }
+
+        {
+          nodes.map((n) => (
+            <g transform={`translate(${n.cx - n.w / 2} ${n.cy - NODE_H / 2})`}>
+              <g
+                class:list={['arch-node arch-step', n.primary && 'is-primary']}
+                data-node={n.id}
+                data-step={stepOf.get(n.id)}
+                data-label={n.label}
+                data-kind={KIND_LABELS[n.kind]}
+                data-note={n.note}
+                tabindex="0"
+                role="button"
+                aria-label={`${n.label}（${KIND_LABELS[n.kind]}）`}
+              >
+                <rect class="arch-node-box" width={n.w} height={NODE_H} rx="12" />
+                <rect class="arch-node-icon-bg" x="12" y="16" width="32" height="32" rx="8" />
+                <path
+                  class="arch-node-icon"
+                  d={ICONS[n.kind]}
+                  transform="translate(18 22) scale(0.833)"
+                  fill="none"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <text class="arch-node-label" x="56" y="30">
+                  {n.label}
+                </text>
+                <text class="arch-node-kind" x="56" y="47">
+                  {KIND_LABELS[n.kind]}
+                </text>
+              </g>
+            </g>
+          ))
+        }
+      </svg>
+    </div>
+
+    <div
+      data-arch-tip
+      role="tooltip"
+      hidden
+      class="pointer-events-none absolute z-10 w-64 rounded-xl border border-line bg-surface px-4 py-3 text-sm shadow-[0_16px_40px_-20px_rgb(15_23_42/0.35)]"
+    >
+      <p class="flex items-baseline gap-2">
+        <span data-tip-label class="font-bold"></span>
+        <span data-tip-kind class="font-mono text-xs text-dim"></span>
+      </p>
+      <p data-tip-note class="mt-1 leading-relaxed text-muted empty:hidden"></p>
+    </div>
+  </div>
+</figure>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-arch]')) setup(root);
+
+  function setup(root: HTMLElement) {
+    const total = Number(root.dataset.steps);
+    const stepped = root.querySelectorAll<SVGElement>('[data-step]');
+    const nodes = root.querySelectorAll<SVGGElement>('[data-node]');
+    const edges = root.querySelectorAll<SVGGElement>('.arch-edge');
+    const stage = root.querySelector<HTMLElement>('[data-arch-stage]')!;
+    const tip = root.querySelector<HTMLElement>('[data-arch-tip]')!;
+
+    function show(step: number) {
+      for (const el of stepped) el.classList.toggle('is-on', Number(el.dataset.step) <= step);
+      root.toggleAttribute('data-flowing', step >= total - 1 && !reduceMotion);
+    }
+
+    // 聚焦一个节点：出去的连线用强调色，进来的用青色，其余变淡；旁边浮出说明
+    function focus(node: SVGGElement | null) {
+      const id = node?.dataset.node ?? null;
+      if (id) root.setAttribute('data-focus', id);
+      else root.removeAttribute('data-focus');
+      const neighbors = new Set<string>();
+      for (const edge of edges) {
+        const { from, to } = edge.dataset;
+        const out = id !== null && from === id;
+        const into = id !== null && to === id;
+        if (out) neighbors.add(to!);
+        if (into) neighbors.add(from!);
+        edge.classList.toggle('is-out', out);
+        edge.classList.toggle('is-in', into);
+        edge.classList.toggle('is-dim', id !== null && !out && !into);
+      }
+      for (const other of nodes) {
+        const nid = other.dataset.node!;
+        other.classList.toggle('is-dim', id !== null && nid !== id && !neighbors.has(nid));
+        other.classList.toggle('is-focus', nid === id);
+      }
+
+      tip.hidden = !node;
+      if (!node) return;
+      tip.querySelector('[data-tip-label]')!.textContent = node.dataset.label ?? '';
+      tip.querySelector('[data-tip-kind]')!.textContent = node.dataset.kind ?? '';
+      tip.querySelector('[data-tip-note]')!.textContent = node.dataset.note ?? '';
+      // 放在节点下方；下方放不下就放上方
+      const box = node.getBoundingClientRect();
+      const area = stage.getBoundingClientRect();
+      const left = Math.min(Math.max(8, box.left - area.left), area.width - tip.offsetWidth - 8);
+      const below = box.bottom - area.top + 8;
+      const top = below + tip.offsetHeight > area.height ? box.top - area.top - tip.offsetHeight - 8 : below;
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    }
+
+    for (const node of nodes) {
+      node.addEventListener('mouseenter', () => focus(node));
+      node.addEventListener('mouseleave', () => focus(null));
+      node.addEventListener('focus', () => focus(node));
+      node.addEventListener('blur', () => focus(null));
+    }
+
+    if (reduceMotion) {
+      show(total - 1);
+      return;
+    }
+
+    // 有 JS 才隐藏起来等着搭建；滚到眼前时按步骤搭一遍
+    root.setAttribute('data-anim', '');
+    show(-1);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        let step = 0;
+        show(step);
+        const timer = window.setInterval(() => {
+          show(++step);
+          if (step >= total - 1) window.clearInterval(timer);
+        }, 1000);
+      },
+      { threshold: 0.35 },
+    );
+    observer.observe(root);
+  }
+</script>

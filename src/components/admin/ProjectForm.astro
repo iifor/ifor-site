@@ -1,6 +1,7 @@
 ---
 import type { ProjectFormValues } from '../../lib/project-form';
 import { mediaUrl } from '../../lib/media';
+import { ARCHITECTURE_EXAMPLE, NODE_KINDS } from '../../lib/architecture';
 
 interface Props {
   values: ProjectFormValues;
@@ -82,6 +83,31 @@ const cardTitle = 'mb-5 font-bold';
           class:list={[input, 'mt-0 resize-y font-mono text-sm leading-relaxed']}
           placeholder="## 这是什么&#10;&#10;写写做了什么、怎么做的、踩过的坑。">{values.body}</textarea>
         <p data-upload-status class="mt-2 text-sm text-dim empty:hidden"></p>
+      </section>
+
+      <section class={card}>
+        <div class="mb-2 flex items-center justify-between gap-4">
+          <h2 class="font-bold">图解 <span class="text-sm font-normal text-dim">（JSON，选填，可以放多张）</span></h2>
+          <button
+            type="button"
+            data-arch-example={JSON.stringify(ARCHITECTURE_EXAMPLE, null, 2)}
+            class="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-line-strong px-3.5 text-sm transition-colors hover:border-dim"
+          >
+            填入示例
+          </button>
+        </div>
+        <p class="mb-4 text-sm leading-relaxed text-muted">
+          显示在项目详情页，会一步步搭建出来、连线上有数据流动；一张图写一个对象，多张图写成数组。<code class="font-mono text-xs">title</code>
+          是图的标题，<code class="font-mono text-xs">nodes</code>
+          写有哪些部分（kind：{NODE_KINDS.join(' / ')}，x、y 是第几列第几行），<code class="font-mono text-xs">edges</code>
+          写怎么连，<code class="font-mono text-xs">steps</code> 写搭建顺序。留空就不显示。
+        </p>
+        <textarea
+          name="architecture"
+          rows="14"
+          data-arch-input
+          spellcheck="false"
+          class:list={[input, 'mt-0 resize-y font-mono text-[13px] leading-relaxed']}>{values.architecture}</textarea>
       </section>
     </div>
 
@@ -186,6 +212,16 @@ const cardTitle = 'mb-5 font-bold';
   const picker = document.querySelector<HTMLInputElement>('[data-insert-image]');
   const body = document.querySelector<HTMLTextAreaElement>('[data-body]');
   const status = document.querySelector<HTMLElement>('[data-upload-status]');
+
+  // 图解"填入示例"：已有内容时先确认
+  const exampleButton = document.querySelector<HTMLButtonElement>('[data-arch-example]');
+  const archInput = document.querySelector<HTMLTextAreaElement>('[data-arch-input]');
+  exampleButton?.addEventListener('click', () => {
+    if (!archInput) return;
+    if (archInput.value.trim() && !confirm('用示例覆盖现在的内容吗？')) return;
+    archInput.value = exampleButton.dataset.archExample ?? '';
+    archInput.focus();
+  });
 
   picker?.addEventListener('change', async () => {
     const file = picker.files?.[0];
