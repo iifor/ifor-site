@@ -3,14 +3,14 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="404">
-  <section class="flex min-h-[60vh] flex-col items-start justify-center gap-6 py-24 font-mono">
-    <p class="text-[15px] text-dim">// 404：这个页面不存在</p>
-    <h1 class="text-[clamp(32px,5vw,56px)] leading-tight font-bold">
-      <span class="text-accent">if</span> (!found) <span class="text-accent">return</span> home;
+  <section class="flex min-h-[60vh] flex-col items-start justify-center gap-6 py-24">
+    <p class="font-mono text-[13px] tracking-[0.18em] text-dim uppercase">404 · Not found</p>
+    <h1 class="text-[clamp(36px,5vw,60px)] leading-tight font-bold">
+      这一页不在<span class="floop">循环</span>里。
     </h1>
     <a
       href="/"
-      class="inline-flex min-h-12 items-center rounded-[10px] bg-accent px-6 font-sans font-bold text-on-accent hover:opacity-90"
+      class="inline-flex min-h-12 items-center rounded-[10px] bg-accent px-6 font-bold text-on-accent transition hover:brightness-110"
     >
       回到首页 →
     </a>

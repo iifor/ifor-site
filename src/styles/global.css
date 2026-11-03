@@ -103,6 +103,39 @@ html {
   animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* 首屏网络图：信号沿连线流过，三段一组接力 */
+@keyframes pulse {
+  0% { stroke-dashoffset: 100; opacity: 1; }
+  33% { stroke-dashoffset: 0; opacity: 1; }
+  34%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+.pulse {
+  stroke-dasharray: 18 82;
+  opacity: 0;
+  animation: pulse 2.4s linear infinite;
+}
+
+@keyframes halo {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  30% { opacity: 0.28; transform: scale(1); }
+  60% { opacity: 0; transform: scale(1.15); }
+}
+
+.node-halo {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: halo 2.4s ease-out infinite;
+}
+
+/* 首屏背景的点阵，四周淡出 */
+.dot-grid {
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 72%);
+}
+
 @keyframes floop {
   0%, 20% { color: var(--loop-1); }
   25%, 45% { color: var(--loop-2); }
@@ -130,8 +163,12 @@ html {
   }
   .floop,
   .caret,
-  .rise {
+  .rise,
+  .node-halo {
     animation: none;
+  }
+  .pulse {
+    display: none;
   }
 }
 
@@ -143,12 +180,20 @@ html {
 
   & > * + * { margin-top: 1.1em; }
   & h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-top: 2.4em;
     color: var(--fg);
-    font-family: var(--font-mono);
     font-size: 22px;
     font-weight: 700;
-    &::before { content: "## "; color: var(--accent); }
+    &::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
   }
   & h3 { margin-top: 1.8em; color: var(--fg); font-size: 18px; font-weight: 700; }
   & strong { color: var(--fg); }

@@ -53,7 +53,7 @@ src/
   assets/projects/     项目图片（构建时自动压缩成 webp）
   styles/global.css    颜色、字体、深浅色主题、正文排版
   layouts/Layout.astro
-  components/          Header、Footer、ProjectCard、CodeLines 等
+  components/          Header、Footer、ProjectCard、NeuralLoop（首屏网络图）等
   pages/               首页、项目详情、404
 ```
 

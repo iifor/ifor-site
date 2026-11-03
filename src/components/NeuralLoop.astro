@@ -1,0 +1,124 @@
+---
+// 首屏插画：一张小神经网络。想法从左边进来，经过 if（判断）和 for（迭代）两层，
+// 右边产出作品；顶上的虚线箭头把结果送回 for 层，表示一轮轮循环。
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const layerX = [60, 200, 340, 470];
+const layerSizes = [3, 5, 5, 2];
+const layerLabels = ['想法', 'if · 判断', 'for · 迭代', '作品'];
+const midY = 220;
+const gap = 66;
+
+const layers = layerSizes.map((size, l) =>
+  Array.from({ length: size }, (_, j) => ({ x: layerX[l], y: midY + (j - (size - 1) / 2) * gap })),
+);
+
+const edges = layers.slice(0, -1).flatMap((from, l) =>
+  from.flatMap((a) => layers[l + 1].map((b) => ({ a, b }))),
+);
+
+// 三条“信号”路线，每条依次穿过三层；颜色跟 Logo 的 f 一样轮换
+const routes = [
+  [0, 1, 2, 0],
+  [1, 3, 1, 1],
+  [2, 2, 4, 0],
+];
+const segmentSeconds = 0.8;
+const pulses = routes.flatMap((route, r) =>
+  route.slice(0, -1).map((nodeIndex, l) => ({
+    a: layers[l][nodeIndex],
+    b: layers[l + 1][route[l + 1]],
+    color: `var(--loop-${(r % 4) + 1})`,
+    delay: r * 0.9 + l * segmentSeconds,
+  })),
+);
+
+const live = new Set(routes.flatMap((route) => route.map((n, l) => `${l}-${n}`)));
+// 回环箭头：从最上面的产出节点上方出发，落到 for 层最上面的节点上方
+const top = midY - 2 * gap;
+const outTop = layers[3][0].y - 26;
+const forTop = top - 18;
+---
+
+<svg aria-hidden="true" viewBox="0 0 530 440" fill="none" class={className}>
+  {edges.map(({ a, b }) => <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} style="stroke: var(--line)" stroke-width="1" />)}
+
+  {
+    pulses.map(({ a, b, color, delay }) => (
+      <path
+        class="pulse"
+        d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`}
+        pathLength="100"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        style={`stroke: ${color}; animation-delay: ${delay}s`}
+      />
+    ))
+  }
+
+  <path
+    d={`M ${layerX[3]} ${outTop} C ${layerX[3]} ${top - 50}, ${layerX[2]} ${top - 70}, ${layerX[2]} ${forTop}`}
+    style="stroke: var(--accent)"
+    stroke-width="1.5"
+    stroke-dasharray="4 6"></path>
+  <path
+    d={`M ${layerX[2] - 6} ${forTop - 10} L ${layerX[2]} ${forTop} L ${layerX[2] + 6} ${forTop - 10}`}
+    style="stroke: var(--accent)"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+  <text
+    x={(layerX[2] + layerX[3]) / 2 + 8}
+    y={top - 46}
+    text-anchor="middle"
+    font-size="12"
+    style="fill: var(--muted); font-family: var(--font-mono)">再来一轮</text
+  >
+
+  {
+    layers.map((nodes, l) =>
+      nodes.map((n, j) => {
+        const isOutput = l === layers.length - 1;
+        const isLive = live.has(`${l}-${j}`);
+        return (
+          <g>
+            {isLive && (
+              <circle
+                class="node-halo"
+                cx={n.x}
+                cy={n.y}
+                r={isOutput ? 22 : 16}
+                style={`fill: var(--loop-${(j % 4) + 1}); animation-delay: ${l * segmentSeconds}s`}
+              />
+            )}
+            <circle
+              cx={n.x}
+              cy={n.y}
+              r={isOutput ? 13 : 8}
+              stroke-width={isLive ? 2 : 1.5}
+              style={`fill: var(--surface); stroke: ${isOutput ? 'var(--accent)' : isLive ? 'var(--fg-soft)' : 'var(--line-strong)'}`}
+            />
+          </g>
+        );
+      }),
+    )
+  }
+
+  {
+    layerLabels.map((label, l) => (
+      <text
+        x={layerX[l]}
+        y={midY + 2 * gap + 52}
+        text-anchor="middle"
+        font-size="12"
+        style="fill: var(--dim); font-family: var(--font-mono)"
+      >
+        {label}
+      </text>
+    ))
+  }
+</svg>
