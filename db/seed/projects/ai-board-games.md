@@ -4,7 +4,9 @@ summary: 通用 AI 对战平台：用 TypeScript 声明一个游戏的流程、�
 tags: [AI, 桌游]
 stack: [TypeScript, React, Express, PostgreSQL]
 order: 1
-art: seats
+cover: ../assets/ai-board-games.png
+coverAlt: 狼人杀对局的夜晚：月光下的湖面，两侧坐着 12 名由不同大模型扮演的玩家
+coverPosition: center 45%
 architecture:
   - title: 硅基桌游的系统架构
     nodes:
