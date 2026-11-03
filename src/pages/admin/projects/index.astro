@@ -1,0 +1,68 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { listProjects } from '../../../lib/projects';
+import { mediaUrl } from '../../../lib/media';
+
+const projects = await listProjects({ includeDrafts: true });
+const deleted = Astro.url.searchParams.get('deleted');
+---
+
+<AdminLayout title="项目">
+  <div class="flex items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">项目</h1>
+      <p class="mt-1 text-sm text-muted">共 {projects.length} 个，按排序显示在网站首页。</p>
+    </div>
+    <a
+      href="/admin/projects/new"
+      class="inline-flex min-h-11 items-center rounded-[10px] bg-accent px-5 font-bold text-on-accent transition hover:brightness-110"
+    >
+      + 新建项目
+    </a>
+  </div>
+
+  {
+    deleted && (
+      <p role="status" class="mt-6 rounded-xl border border-line bg-surface px-5 py-3 text-sm text-muted">
+        已删除「{deleted}」
+      </p>
+    )
+  }
+
+  <ul class="mt-6 divide-y divide-line-soft overflow-hidden rounded-2xl border border-line bg-surface">
+    {
+      projects.map((p) => (
+        <li>
+          <a href={`/admin/projects/${p.id}`} class="flex items-center gap-5 px-5 py-4 transition-colors hover:bg-surface-2">
+            <span class="w-8 flex-none text-right font-mono text-sm text-dim">{p.order}</span>
+            {p.coverId ? (
+              <img src={mediaUrl(p.coverId)} alt="" class="h-12 w-16 flex-none rounded-md border border-line bg-black object-cover" />
+            ) : (
+              <span class="flex h-12 w-16 flex-none items-center justify-center rounded-md border border-line bg-surface-2 font-mono text-dim">
+                {p.title.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-bold">{p.title}</span>
+              <span class="mt-0.5 block truncate font-mono text-xs text-dim">/projects/{p.id}/</span>
+            </span>
+            <span class="hidden flex-none gap-1.5 lg:flex">
+              {p.tags.map((tag) => (
+                <span class="rounded-md bg-chip px-2 py-0.5 font-mono text-xs text-fg-soft">{tag}</span>
+              ))}
+            </span>
+            <span
+              class:list={[
+                'w-14 flex-none rounded-full px-2 py-0.5 text-center text-xs',
+                p.published ? 'bg-emerald-50 text-emerald-800' : 'bg-chip text-muted',
+              ]}
+            >
+              {p.published ? '已发布' : '草稿'}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+    {projects.length === 0 && <li class="px-5 py-12 text-center text-muted">还没有项目，点右上角新建一个。</li>}
+  </ul>
+</AdminLayout>

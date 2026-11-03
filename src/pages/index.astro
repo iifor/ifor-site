@@ -1,15 +1,13 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import NeuralLoop from '../components/NeuralLoop.astro';
 import ProjectCard from '../components/ProjectCard.astro';
+import { listProjects } from '../lib/projects';
 import { site } from '../site';
 
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const projects = await listProjects();
 
-const ALL = '全部';
-const tags = [...new Set(projects.flatMap((p) => p.data.tags))];
-const filters = [ALL, ...tags];
+const tags = [...new Set(projects.flatMap((p) => p.tags))];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const about = [
@@ -82,31 +80,12 @@ const kicker = 'font-mono text-[13px] tracking-[0.18em] text-dim uppercase';
 
   <section id="projects" class="scroll-mt-24 pt-6 pb-26">
     <p class={kicker}>01 · Projects</p>
-    <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
-      <div>
-        <h2 class="text-[34px] font-bold tracking-tight">项目</h2>
-        <p class="mt-2 text-muted">做过的东西，挑你感兴趣的看。</p>
-      </div>
-      <div role="group" aria-label="按标签筛选" class="flex flex-wrap gap-2">
-        {
-          filters.map((filter) => (
-            <button
-              type="button"
-              data-filter={filter === ALL ? '' : filter}
-              aria-pressed={filter === ALL ? 'true' : 'false'}
-              class="min-h-11 cursor-pointer rounded-full border border-line-strong px-4.5 font-mono text-sm text-fg-soft transition-colors hover:border-dim hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent"
-            >
-              {filter}
-            </button>
-          ))
-        }
-      </div>
-    </div>
+    <h2 class="mt-3 text-[34px] font-bold tracking-tight">项目</h2>
+    <p class="mt-2 text-muted">做过的东西，挑你感兴趣的看。</p>
 
     <div class="mt-10 grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-6">
       {projects.map((project) => <ProjectCard project={project} />)}
       <article
-        data-tags=""
         class="flex min-h-[420px] flex-col items-center justify-center gap-4 rounded-2xl border-[1.5px] border-dashed border-line-strong p-8 text-center"
       >
         <svg
@@ -154,30 +133,3 @@ const kicker = 'font-mono text-[13px] tracking-[0.18em] text-dim uppercase';
     </dl>
   </section>
 </Layout>
-
-<script>
-  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
-  const cards = document.querySelectorAll<HTMLElement>('[data-tags]');
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-  for (const button of buttons) {
-    button.addEventListener('click', () => {
-      // 空字符串代表“全部”
-      const tag = button.dataset.filter;
-      for (const b of buttons) b.setAttribute('aria-pressed', String(b === button));
-      for (const card of cards) {
-        const wasHidden = card.hidden;
-        card.hidden = Boolean(tag) && !card.dataset.tags!.split(',').includes(tag!);
-        if (wasHidden && !card.hidden && !reduceMotion.matches) {
-          card.animate(
-            [
-              { opacity: 0, transform: 'translateY(8px)' },
-              { opacity: 1, transform: 'none' },
-            ],
-            { duration: 260, easing: 'ease-out' },
-          );
-        }
-      }
-    });
-  }
-</script>

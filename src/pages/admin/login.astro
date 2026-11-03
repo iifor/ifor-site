@@ -1,0 +1,47 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { checkPassword, isHttps, isLoggedIn, startSession } from '../../lib/auth';
+import { allow } from '../../lib/rate-limit';
+
+if (isLoggedIn(Astro.cookies)) return Astro.redirect('/admin/projects');
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (!allow(`login:${Astro.clientAddress}`, 10, 15 * 60 * 1000)) {
+    error = '尝试次数太多，15 分钟后再试';
+  } else if (checkPassword(String(form.get('password') ?? ''))) {
+    startSession(Astro.cookies, isHttps(Astro.request, Astro.url));
+    return Astro.redirect('/admin/projects');
+  } else {
+    error = '密码不对';
+  }
+}
+---
+
+<AdminLayout title="登录" bare>
+  <main class="flex min-h-screen items-center justify-center px-4">
+    <form method="post" class="w-[360px] rounded-2xl border border-line bg-surface p-8 shadow-[0_24px_60px_-36px_rgb(15_23_42/0.35)]">
+      <p class="font-mono text-2xl font-bold">i<span class="floop">f</span>or</p>
+      <h1 class="mt-2 text-muted">登录后台</h1>
+      <label class="mt-8 block text-sm font-medium text-fg-soft">
+        密码
+        <input
+          type="password"
+          name="password"
+          required
+          autofocus
+          autocomplete="current-password"
+          class="mt-2 w-full rounded-[10px] border border-line-strong bg-surface px-3.5 py-2.5 outline-none focus:border-accent"
+        />
+      </label>
+      {error && <p role="alert" class="mt-3 text-sm text-red-700">{error}</p>}
+      <button
+        type="submit"
+        class="mt-6 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[10px] bg-accent font-bold text-on-accent transition hover:brightness-110"
+      >
+        登录
+      </button>
+    </form>
+  </main>
+</AdminLayout>

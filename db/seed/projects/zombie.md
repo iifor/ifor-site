@@ -4,7 +4,7 @@ summary: 用一段 Python 脚本在 Blender 里程序化生成丧尸角色模型
 tags: [3D, Blender]
 stack: [Python, Blender]
 order: 2
-cover: ../../assets/projects/zombie.png
+cover: ../assets/zombie.png
 coverAlt: Blender 渲染出的丧尸角色模型
 coverPosition: center 22%
 ---
@@ -25,7 +25,7 @@ coverPosition: center 22%
 blender -b -P build_zombie.py
 ```
 
-![丧尸模型的侧面渲染](../../assets/projects/zombie-side.png)
+![丧尸模型的侧面渲染](../assets/zombie-side.png)
 
 ## 做的过程中
 

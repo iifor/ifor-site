@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { Font } from 'astro:assets';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import ContactDialog from '../components/ContactDialog.astro';
 import { site } from '../site';
 
 interface Props {
@@ -26,12 +27,6 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <Font cssVariable="--font-jetbrains" preload />
     <title>{pageTitle}</title>
-    <script is:inline>
-      // 在首帧之前套用上次选的主题，避免闪一下深色
-      try {
-        if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
-      } catch {}
-    </script>
   </head>
   <body class="min-h-screen bg-bg font-sans text-fg antialiased">
     <Header />
@@ -41,5 +36,6 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
       </main>
       <Footer />
     </div>
+    <ContactDialog />
   </body>
 </html>

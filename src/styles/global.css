@@ -1,34 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
-
-/* 深色是默认主题，浅色通过 <html data-theme="light"> 切换 */
+/* 只有白色主题 */
 :root {
-  color-scheme: dark;
-  --bg: #0d1117;
-  --surface: #151b23;
-  --surface-2: #10151c;
-  --chip: #1f2731;
-  --line: #262e38;
-  --line-soft: #1f2731;
-  --line-strong: #30363d;
-  --seat: #1c232c;
-  --seat-line: #38424f;
-  --fg: #e6edf3;
-  --fg-soft: #c9d1d9;
-  --muted: #9aa6b2;
-  --dim: #7d8590;
-  --accent: #ffb454;
-  --on-accent: #0d1117;
-  --string: #7fd1b9;
-  /* Logo 里那个 f 循环用的四种颜色 */
-  --loop-1: #ffb454;
-  --loop-2: #7fd1b9;
-  --loop-3: #82aaff;
-  --loop-4: #f78c6c;
-}
-
-:root[data-theme="light"] {
   color-scheme: light;
   --bg: #fafbfc;
   --surface: #ffffff;
@@ -46,6 +19,7 @@
   --accent: #9a5b00;
   --on-accent: #ffffff;
   --string: #0f7b63;
+  /* Logo 里那个 f 循环用的四种颜色 */
   --loop-1: #9a5b00;
   --loop-2: #0f7b63;
   --loop-3: #2f5bd3;

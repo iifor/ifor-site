@@ -1,0 +1,37 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ProjectForm from '../../../components/admin/ProjectForm.astro';
+import { createProject, listProjects } from '../../../lib/projects';
+import { saveUploadedImage } from '../../../lib/media';
+import { emptyProjectValues, ID_PATTERN, readProjectForm } from '../../../lib/project-form';
+
+const existing = await listProjects({ includeDrafts: true });
+let values = emptyProjectValues(Math.max(0, ...existing.map((p) => p.order)) + 1);
+let errors: string[] = [];
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const result = readProjectForm(form);
+  values = result.values;
+  errors = result.errors;
+  if (!ID_PATTERN.test(values.id)) errors.unshift('网址标识只能用小写字母、数字和横线，并以字母或数字开头');
+
+  // 其他字段都对了才上传封面，避免留下没人用的图片
+  const cover = errors.length ? {} : await saveUploadedImage(form.get('coverFile'));
+  if (cover.error) errors.push(cover.error);
+
+  if (errors.length === 0) {
+    if (cover.media) result.input.coverId = cover.media.id;
+    if (await createProject(values.id, result.input)) {
+      return Astro.redirect(`/admin/projects/${values.id}?saved=1`);
+    }
+    errors.push('这个网址标识已经被别的项目用了');
+  }
+}
+---
+
+<AdminLayout title="新建项目">
+  <a href="/admin/projects" class="text-sm text-muted hover:text-fg">← 项目</a>
+  <h1 class="mt-2 mb-6 text-2xl font-bold">新建项目</h1>
+  <ProjectForm values={values} errors={errors} mode="new" />
+</AdminLayout>

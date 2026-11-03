@@ -1,0 +1,65 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ProjectForm from '../../../components/admin/ProjectForm.astro';
+import { deleteProject, getProject, updateProject } from '../../../lib/projects';
+import { saveUploadedImage } from '../../../lib/media';
+import { projectToValues, readProjectForm } from '../../../lib/project-form';
+
+const id = Astro.params.id!;
+const project = await getProject(id);
+if (!project) return new Response(null, { status: 404 });
+
+let values = projectToValues(project);
+let errors: string[] = [];
+const saved = Astro.url.searchParams.has('saved');
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+
+  if (form.get('intent') === 'delete') {
+    await deleteProject(id);
+    return Astro.redirect(`/admin/projects?deleted=${encodeURIComponent(project.title)}`);
+  }
+
+  const result = readProjectForm(form);
+  values = { ...result.values, id };
+  errors = result.errors;
+  if (form.get('removeCover') === 'on') {
+    result.input.coverId = null;
+    values.coverId = '';
+  }
+
+  const cover = errors.length ? {} : await saveUploadedImage(form.get('coverFile'));
+  if (cover.error) errors.push(cover.error);
+
+  if (errors.length === 0) {
+    if (cover.media) result.input.coverId = cover.media.id;
+    await updateProject(id, result.input);
+    return Astro.redirect(`/admin/projects/${id}?saved=1`);
+  }
+}
+---
+
+<AdminLayout title={values.title || id}>
+  <a href="/admin/projects" class="text-sm text-muted hover:text-fg">← 项目</a>
+  <div class="mt-2 mb-6 flex items-center gap-4">
+    <h1 class="text-2xl font-bold">{project.title}</h1>
+    {
+      saved && errors.length === 0 && (
+        <p role="status" data-flash class="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-800 transition-opacity duration-500">
+          已保存
+        </p>
+      )
+    }
+  </div>
+  <ProjectForm values={values} errors={errors} mode="edit" />
+</AdminLayout>
+
+<script>
+  // "已保存"提示几秒后淡出，并去掉地址栏里的 ?saved
+  const flash = document.querySelector<HTMLElement>('[data-flash]');
+  if (flash) {
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => (flash.style.opacity = '0'), 2500);
+  }
+</script>

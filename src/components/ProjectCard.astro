@@ -1,27 +1,24 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { Project } from '../lib/projects';
 import ProjectCover from './ProjectCover.astro';
 import Tag from './Tag.astro';
 
 interface Props {
-  project: CollectionEntry<'projects'>;
+  project: Project;
 }
 
 const { project } = Astro.props;
-const { title, summary, tags, stack, demo, source } = project.data;
+const { title, summary, tags, stack, demo, source } = project;
 const href = `/projects/${project.id}/`;
 ---
 
 <article
-  data-tags={tags.join(',')}
-  class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-[0_20px_50px_-28px_rgb(0_0_0/0.55)]"
+  class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-[0_20px_50px_-28px_rgb(15_23_42/0.28)]"
 >
   <a href={href} tabindex="-1" aria-hidden="true" class="block overflow-hidden border-b border-line">
     <ProjectCover
       project={project}
       class="h-[260px] transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-      widths={[420, 840]}
-      sizes="(min-width: 1200px) 384px, (min-width: 768px) 50vw, 100vw"
     />
   </a>
   <div class="flex flex-1 flex-col gap-3.5 px-6 pt-6 pb-5.5">

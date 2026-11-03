@@ -1,0 +1,76 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { deleteMessage, listMessages, setRead } from '../../lib/messages';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const id = Number(form.get('id'));
+  const intent = form.get('intent');
+  if (Number.isInteger(id)) {
+    if (intent === 'read') await setRead(id, true);
+    if (intent === 'unread') await setRead(id, false);
+    if (intent === 'delete') await deleteMessage(id);
+  }
+  return Astro.redirect('/admin/messages');
+}
+
+const messages = await listMessages();
+const unread = messages.filter((m) => !m.read).length;
+const formatTime = new Intl.DateTimeFormat('zh-CN', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Asia/Shanghai',
+});
+
+const action = 'inline-flex min-h-9 cursor-pointer items-center rounded-lg px-3 text-sm transition-colors';
+---
+
+<AdminLayout title="留言">
+  <h1 class="text-2xl font-bold">留言</h1>
+  <p class="mt-1 text-sm text-muted">
+    共 {messages.length} 条{unread > 0 && `，${unread} 条未读`}。访客在网站上点"联系我"发来的内容都在这里。
+  </p>
+
+  <ul class="mt-6 space-y-4">
+    {
+      messages.map((m) => (
+        <li
+          class:list={[
+            'rounded-2xl border bg-surface p-6',
+            m.read ? 'border-line' : 'border-accent/40 shadow-[0_12px_40px_-28px_rgb(154_91_0/0.6)]',
+          ]}
+        >
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {!m.read && <span class="size-2 rounded-full bg-accent" aria-label="未读" />}
+            <span class="font-bold">{m.name || '匿名'}</span>
+            {m.contact && <span class="font-mono text-sm text-fg-soft select-all">{m.contact}</span>}
+            <time datetime={m.createdAt.toISOString()} class="ml-auto font-mono text-xs text-dim">
+              {formatTime.format(m.createdAt)}
+            </time>
+          </div>
+          <p class="mt-3 leading-relaxed whitespace-pre-wrap text-fg-soft">{m.content}</p>
+          <form method="post" class="mt-4 flex gap-1 border-t border-line-soft pt-3">
+            <input type="hidden" name="id" value={m.id} />
+            <button type="submit" name="intent" value={m.read ? 'unread' : 'read'} class:list={[action, 'text-fg-soft hover:bg-chip']}>
+              {m.read ? '标为未读' : '标为已读'}
+            </button>
+            <button
+              type="submit"
+              name="intent"
+              value="delete"
+              data-confirm="确定删除这条留言吗？"
+              class:list={[action, 'text-red-700 hover:bg-red-50']}
+            >
+              删除
+            </button>
+          </form>
+        </li>
+      ))
+    }
+    {
+      messages.length === 0 && (
+        <li class="rounded-2xl border border-line bg-surface px-6 py-12 text-center text-muted">还没有人留言。</li>
+      )
+    }
+  </ul>
+</AdminLayout>
