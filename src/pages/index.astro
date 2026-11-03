@@ -35,29 +35,29 @@ const meCode = [
 ---
 
 <Layout>
-  <section class="flex flex-wrap items-center gap-14 pt-12 pb-24 md:pt-22">
+  <section class="flex flex-wrap items-center gap-14 pt-16 pb-28">
     <div class="min-w-0 flex-[1_1_520px]">
-      <p class="font-mono text-[15px] text-dim">// {site.tagline}</p>
+      <p class="rise font-mono text-[15px] text-dim">// {site.tagline}</p>
       <h1
-        class="mt-5 mb-7 font-mono text-[clamp(28px,3.9vw,54px)] leading-[1.18] font-bold tracking-[-0.03em]"
+        class="rise mt-5 mb-7 font-mono text-[clamp(28px,3.9vw,54px)] leading-[1.18] font-bold tracking-[-0.03em] [animation-delay:70ms]"
       >
         <span class="block"><span class="text-accent">if</span> (idea) {'{'}</span>
         <span class="block pl-[2ch]"><span class="text-accent">for</span> (;;) build();</span>
         <span class="block">{'}'}</span>
       </h1>
-      <p class="max-w-[520px] text-lg leading-[1.8] text-muted">
+      <p class="rise max-w-[520px] text-lg leading-[1.8] text-muted [animation-delay:140ms]">
         你好，我是 {site.author}。这里收着我做过的东西：AI 实验、桌游、3D 小玩意，以及所有让我好奇、忍不住动手的想法。
       </p>
-      <div class="mt-9 flex flex-wrap gap-3">
+      <div class="rise mt-9 flex flex-wrap gap-3 [animation-delay:210ms]">
         <a
           href="#projects"
-          class="inline-flex min-h-12 items-center rounded-[10px] bg-accent px-6 font-bold text-on-accent hover:opacity-90"
+          class="group inline-flex min-h-12 items-center gap-1.5 rounded-[10px] bg-accent px-6 font-bold text-on-accent transition hover:brightness-110"
         >
-          看看项目 →
+          看看项目 <span aria-hidden="true" class="transition-transform group-hover:translate-x-0.5">→</span>
         </a>
         <a
           href="#about"
-          class="inline-flex min-h-12 items-center rounded-[10px] border border-line-strong px-6 font-medium hover:border-dim"
+          class="inline-flex min-h-12 items-center rounded-[10px] border border-line-strong px-6 font-medium transition-colors hover:border-dim"
         >
           关于我
         </a>
@@ -66,7 +66,7 @@ const meCode = [
 
     <figure
       aria-label="projects.ts：项目列表的代码示意"
-      class="min-w-0 flex-[1_1_420px] overflow-hidden rounded-[14px] border border-line bg-surface"
+      class="rise min-w-0 flex-[1_1_420px] overflow-hidden rounded-[14px] border border-line bg-surface shadow-[0_24px_60px_-30px_rgb(0_0_0/0.5)] [animation-delay:280ms]"
     >
       <div class="flex items-center border-b border-line font-mono text-[13px]">
         <div class="flex items-center gap-2 border-r border-line bg-bg px-4.5 py-3">
@@ -79,12 +79,12 @@ const meCode = [
         <div class="px-4.5 py-3 text-dim">about.ts</div>
       </div>
       <div class="overflow-x-auto pt-5 pb-6">
-        <CodeLines lines={heroCode} numbered />
+        <CodeLines lines={heroCode} numbered caret />
       </div>
     </figure>
   </section>
 
-  <section id="projects" class="scroll-mt-6 pt-6 pb-26">
+  <section id="projects" class="scroll-mt-24 pt-6 pb-26">
     <h2 class="font-mono text-[30px] font-bold tracking-tight">
       <span class="text-accent">for</span> (project <span class="text-accent">of</span> projects)
     </h2>
@@ -102,7 +102,7 @@ const meCode = [
             type="button"
             data-filter={filter === ALL ? '' : filter}
             aria-pressed={filter === ALL ? 'true' : 'false'}
-            class="min-h-11 cursor-pointer rounded-full border border-line-strong px-4.5 text-sm font-medium text-fg-soft hover:border-dim aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent"
+            class="min-h-11 cursor-pointer rounded-full border border-line-strong px-4.5 text-sm font-medium text-fg-soft transition-colors hover:border-dim hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent"
           >
             "{filter}"
           </button>
@@ -123,7 +123,7 @@ const meCode = [
     </div>
   </section>
 
-  <section id="about" class="flex scroll-mt-6 flex-wrap items-start gap-14 border-t border-line-soft pt-18 pb-26">
+  <section id="about" class="flex scroll-mt-24 flex-wrap items-start gap-14 border-t border-line-soft pt-18 pb-26">
     <div class="min-w-0 flex-[1_1_420px]">
       <p class="font-mono text-[15px] text-dim">// about</p>
       <h2 class="mt-3 mb-5 text-[30px] font-bold">关于我</h2>
@@ -138,6 +138,7 @@ const meCode = [
 <script>
   const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
   const cards = document.querySelectorAll<HTMLElement>('[data-tags]');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   for (const button of buttons) {
     button.addEventListener('click', () => {
@@ -145,7 +146,17 @@ const meCode = [
       const tag = button.dataset.filter;
       for (const b of buttons) b.setAttribute('aria-pressed', String(b === button));
       for (const card of cards) {
+        const wasHidden = card.hidden;
         card.hidden = Boolean(tag) && !card.dataset.tags!.split(',').includes(tag!);
+        if (wasHidden && !card.hidden && !reduceMotion.matches) {
+          card.animate(
+            [
+              { opacity: 0, transform: 'translateY(8px)' },
+              { opacity: 1, transform: 'none' },
+            ],
+            { duration: 260, easing: 'ease-out' },
+          );
+        }
       }
     });
   }

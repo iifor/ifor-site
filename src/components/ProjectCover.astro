@@ -8,9 +8,11 @@ interface Props {
   class?: string;
   sizes: string;
   widths: number[];
+  /** 首屏可见的封面：立即加载并提高优先级 */
+  priority?: boolean;
 }
 
-const { project, class: className, sizes, widths } = Astro.props;
+const { project, class: className, sizes, widths, priority = false } = Astro.props;
 const { cover, coverAlt, coverPosition, art, title } = project.data;
 ---
 
@@ -21,6 +23,7 @@ const { cover, coverAlt, coverPosition, art, title } = project.data;
       alt={coverAlt ?? title}
       widths={widths}
       sizes={sizes}
+      priority={priority}
       class:list={['w-full bg-black object-cover', className]}
       style={`object-position: ${coverPosition}`}
     />

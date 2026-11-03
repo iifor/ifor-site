@@ -4,9 +4,11 @@ import type { CodeLine, TokenKind } from '../lib/code';
 interface Props {
   lines: CodeLine[];
   numbered?: boolean;
+  /** 在最后一行末尾放一个闪烁的光标 */
+  caret?: boolean;
 }
 
-const { lines, numbered = false } = Astro.props;
+const { lines, numbered = false, caret = false } = Astro.props;
 
 const tokenClass: Record<TokenKind, string> = {
   kw: 'text-accent',
@@ -30,6 +32,9 @@ const tokenClass: Record<TokenKind, string> = {
             <span class={tokenClass[token.kind]}>{token.text}</span>
           ))}
           {codeLine.tokens.length === 0 && ' '}
+          {caret && i === lines.length - 1 && (
+            <span aria-hidden="true" class="caret ml-1 inline-block h-[1.1em] w-[0.55em] translate-y-[0.2em] bg-accent" />
+          )}
         </span>
       </div>
     ))
