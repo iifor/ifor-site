@@ -3,7 +3,7 @@ title: ifor 个人网站
 summary: 就是你正在看的这个网站：Astro 服务端渲染 + PostgreSQL，带管理后台、访客留言和 SeeCode 风格的动态图解。
 tags: [网站, AI]
 stack: [Astro, TypeScript, Tailwind CSS, PostgreSQL]
-order: 2
+order: 3
 art: loop
 architecture:
   - title: ifor 的系统架构
