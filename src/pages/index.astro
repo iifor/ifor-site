@@ -1,0 +1,152 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import CodeLines from '../components/CodeLines.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { cm, kw, line, str, strList, tx } from '../lib/code';
+import { site } from '../site';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const ALL = '全部';
+const filters = [ALL, ...new Set(projects.flatMap((p) => p.data.tags))];
+
+const heroCode = [
+  line([kw('const'), tx(' projects = [')]),
+  ...projects.map((p) =>
+    line([tx('{ name: '), str(p.data.title), tx(', tags: ['), ...strList(p.data.tags), tx('] },')], 1),
+  ),
+  line([cm('// TODO: 下一个')], 1),
+  line([tx('];')]),
+  line([]),
+  line([kw('for'), tx(' ('), kw('const'), tx(' p '), kw('of'), tx(' projects) {')]),
+  line([kw('if'), tx(' (p.isFun) ship(p);')], 1),
+  line([tx('}')]),
+];
+
+const meCode = [
+  line([kw('const'), tx(' me = {')]),
+  line([tx('name: '), str(site.author), tx(',')], 1),
+  line([tx('likes: ['), ...strList(site.likes), tx('],')], 1),
+  line([tx('now: '), str(site.now), tx(',')], 1),
+  ...(site.email ? [line([tx('mail: '), str(site.email), tx(',')], 1)] : []),
+  line([tx('};')]),
+];
+---
+
+<Layout>
+  <section class="flex flex-wrap items-center gap-14 pt-12 pb-24 md:pt-22">
+    <div class="min-w-0 flex-[1_1_520px]">
+      <p class="font-mono text-[15px] text-dim">// {site.tagline}</p>
+      <h1
+        class="mt-5 mb-7 font-mono text-[clamp(28px,3.9vw,54px)] leading-[1.18] font-bold tracking-[-0.03em]"
+      >
+        <span class="block"><span class="text-accent">if</span> (idea) {'{'}</span>
+        <span class="block pl-[2ch]"><span class="text-accent">for</span> (;;) build();</span>
+        <span class="block">{'}'}</span>
+      </h1>
+      <p class="max-w-[520px] text-lg leading-[1.8] text-muted">
+        你好，我是 {site.author}。这里收着我做过的东西：AI 实验、桌游、3D 小玩意，以及所有让我好奇、忍不住动手的想法。
+      </p>
+      <div class="mt-9 flex flex-wrap gap-3">
+        <a
+          href="#projects"
+          class="inline-flex min-h-12 items-center rounded-[10px] bg-accent px-6 font-bold text-on-accent hover:opacity-90"
+        >
+          看看项目 →
+        </a>
+        <a
+          href="#about"
+          class="inline-flex min-h-12 items-center rounded-[10px] border border-line-strong px-6 font-medium hover:border-dim"
+        >
+          关于我
+        </a>
+      </div>
+    </div>
+
+    <figure
+      aria-label="projects.ts：项目列表的代码示意"
+      class="min-w-0 flex-[1_1_420px] overflow-hidden rounded-[14px] border border-line bg-surface"
+    >
+      <div class="flex items-center border-b border-line font-mono text-[13px]">
+        <div class="flex items-center gap-2 border-r border-line bg-bg px-4.5 py-3">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+            <path d="M14 3v6h6"></path>
+          </svg>
+          projects.ts
+        </div>
+        <div class="px-4.5 py-3 text-dim">about.ts</div>
+      </div>
+      <div class="overflow-x-auto pt-5 pb-6">
+        <CodeLines lines={heroCode} numbered />
+      </div>
+    </figure>
+  </section>
+
+  <section id="projects" class="scroll-mt-6 pt-6 pb-26">
+    <h2 class="font-mono text-[30px] font-bold tracking-tight">
+      <span class="text-accent">for</span> (project <span class="text-accent">of</span> projects)
+    </h2>
+    <p class="mt-3 text-muted">做过的东西，挑你感兴趣的看。</p>
+
+    <div
+      role="group"
+      aria-label="按标签筛选"
+      class="my-8 flex flex-wrap items-center gap-2.5 font-mono text-[15px] text-muted"
+    >
+      <span><span class="text-accent">if</span> (tag ===</span>
+      {
+        filters.map((filter) => (
+          <button
+            type="button"
+            data-filter={filter === ALL ? '' : filter}
+            aria-pressed={filter === ALL ? 'true' : 'false'}
+            class="min-h-11 cursor-pointer rounded-full border border-line-strong px-4.5 text-sm font-medium text-fg-soft hover:border-dim aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent"
+          >
+            "{filter}"
+          </button>
+        ))
+      }
+      <span>)</span>
+    </div>
+
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-6">
+      {projects.map((project) => <ProjectCard project={project} />)}
+      <article
+        data-tags=""
+        class="flex min-h-[420px] flex-col items-center justify-center gap-3 rounded-2xl border-[1.5px] border-dashed border-line-strong p-8 text-center"
+      >
+        <p class="font-mono text-[30px] font-bold text-dim">// TODO</p>
+        <p class="text-muted">下一个项目还在循环里</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="about" class="flex scroll-mt-6 flex-wrap items-start gap-14 border-t border-line-soft pt-18 pb-26">
+    <div class="min-w-0 flex-[1_1_420px]">
+      <p class="font-mono text-[15px] text-dim">// about</p>
+      <h2 class="mt-3 mb-5 text-[30px] font-bold">关于我</h2>
+      <p class="max-w-[480px] text-[17px] leading-[1.8] text-muted">{site.intro}</p>
+    </div>
+    <div class="min-w-0 flex-[1_1_420px] overflow-x-auto rounded-[14px] border border-line bg-surface px-7 py-6">
+      <CodeLines lines={meCode} />
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+  const cards = document.querySelectorAll<HTMLElement>('[data-tags]');
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      // 空字符串代表“全部”
+      const tag = button.dataset.filter;
+      for (const b of buttons) b.setAttribute('aria-pressed', String(b === button));
+      for (const card of cards) {
+        card.hidden = Boolean(tag) && !card.dataset.tags!.split(',').includes(tag!);
+      }
+    });
+  }
+</script>

@@ -1,0 +1,58 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ProjectCover from './ProjectCover.astro';
+import Tag from './Tag.astro';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, summary, tags, stack, demo, source } = project.data;
+const href = `/projects/${project.id}/`;
+---
+
+<article
+  data-tags={tags.join(',')}
+  class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface"
+>
+  <a href={href} tabindex="-1" aria-hidden="true" class="block border-b border-line">
+    <ProjectCover
+      project={project}
+      class="h-[260px]"
+      widths={[420, 840]}
+      sizes="(min-width: 1200px) 384px, (min-width: 768px) 50vw, 100vw"
+    />
+  </a>
+  <div class="flex flex-1 flex-col gap-3.5 px-6 pt-6 pb-5.5">
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+      <h3 class="text-[22px] font-bold">
+        <a href={href} class="hover:text-accent">{title}</a>
+      </h3>
+      <div class="flex gap-1.5">
+        {tags.map((tag) => <Tag>{tag}</Tag>)}
+      </div>
+    </div>
+    <p class="text-[15px] leading-[1.75] text-muted">{summary}</p>
+    <p class="font-mono text-[13px] text-dim">{stack.join(' · ')}</p>
+    <div class="mt-auto flex flex-wrap gap-2 pt-1.5">
+      <a href={href} class="inline-flex min-h-11 items-center px-1 text-[15px] font-bold text-accent">
+        查看详情 →
+      </a>
+      {
+        demo && (
+          <a href={demo} class="inline-flex min-h-11 items-center px-3 text-[15px] text-fg-soft hover:text-fg">
+            在线试玩
+          </a>
+        )
+      }
+      {
+        source && (
+          <a href={source} class="inline-flex min-h-11 items-center px-3 text-[15px] text-fg-soft hover:text-fg">
+            源码
+          </a>
+        )
+      }
+    </div>
+  </div>
+</article>

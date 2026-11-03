@@ -1,0 +1,37 @@
+---
+import type { CodeLine, TokenKind } from '../lib/code';
+
+interface Props {
+  lines: CodeLine[];
+  numbered?: boolean;
+}
+
+const { lines, numbered = false } = Astro.props;
+
+const tokenClass: Record<TokenKind, string> = {
+  kw: 'text-accent',
+  str: 'text-string',
+  cm: 'text-dim',
+  tx: '',
+};
+---
+
+<div class="font-mono text-[15px] leading-[1.95]">
+  {
+    lines.map((codeLine, i) => (
+      <div class="flex">
+        {numbered && (
+          <span aria-hidden="true" class="w-13 flex-none pr-5 text-right text-dim select-none">
+            {i + 1}
+          </span>
+        )}
+        <span class="whitespace-pre" style={`padding-left: ${(codeLine.indent ?? 0) * 2}ch`}>
+          {codeLine.tokens.map((token) => (
+            <span class={tokenClass[token.kind]}>{token.text}</span>
+          ))}
+          {codeLine.tokens.length === 0 && ' '}
+        </span>
+      </div>
+    ))
+  }
+</div>

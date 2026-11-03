@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import SeatsArt from './SeatsArt.astro';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  class?: string;
+  sizes: string;
+  widths: number[];
+}
+
+const { project, class: className, sizes, widths } = Astro.props;
+const { cover, coverAlt, coverPosition, art, title } = project.data;
+---
+
+{
+  cover ? (
+    <Image
+      src={cover}
+      alt={coverAlt ?? title}
+      widths={widths}
+      sizes={sizes}
+      class:list={['w-full bg-black object-cover', className]}
+      style={`object-position: ${coverPosition}`}
+    />
+  ) : (
+    <div class:list={['flex w-full items-center justify-center bg-surface-2', className]}>
+      {art === 'seats' ? (
+        <SeatsArt class="h-[92%] max-h-[260px] w-auto" />
+      ) : (
+        <span class="font-mono text-dim">{'// ' + title}</span>
+      )}
+    </div>
+  )
+}

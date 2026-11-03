@@ -1,0 +1,55 @@
+---
+// 狼人杀 12 人局的座位图：一圈座位围着主持，两名玩家正在被点名
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const seats = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i * Math.PI) / 6;
+  return {
+    x: 160 + 84 * Math.cos(angle),
+    y: 120 + 84 * Math.sin(angle),
+    active: i === 1 || i === 8,
+  };
+});
+---
+
+<svg aria-hidden="true" viewBox="0 0 320 240" fill="none" class={className}>
+  {
+    seats
+      .filter((seat) => seat.active)
+      .map((seat) => (
+        <line
+          x1="160"
+          y1="120"
+          x2={seat.x}
+          y2={seat.y}
+          style="stroke: var(--accent)"
+          stroke-width="1.5"
+          stroke-dasharray="4 5"
+        />
+      ))
+  }
+  {
+    seats.map((seat) => (
+      <circle
+        cx={seat.x}
+        cy={seat.y}
+        r="13"
+        style={`fill: var(--seat); stroke: ${seat.active ? 'var(--accent)' : 'var(--seat-line)'}`}
+        stroke-width={seat.active ? 2 : 1.5}
+      />
+    ))
+  }
+  <circle cx="160" cy="120" r="30" style="fill: var(--bg); stroke: var(--accent)" stroke-width="2"></circle>
+  <text
+    x="160"
+    y="125"
+    text-anchor="middle"
+    font-size="14"
+    font-weight="700"
+    style="fill: var(--fg); font-family: var(--font-sans)">主持</text
+  >
+</svg>
